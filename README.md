@@ -41,7 +41,7 @@
 
 ```lua
 local Library = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/JScripter-Lua/XovaModedLib/refs/heads/main/VitaLib_Enhanced.lua"
+    "https://raw.githubusercontent.com/UnlessDahell/VitaLib-XovaLib-Demo-V3-/refs/heads/main/VitaLib.lua"
 ))()
 ```
 
@@ -56,7 +56,7 @@ Creates the main UI window. Returns a `Window` object.
 ```lua
 local Window = Library:Window({
     Title             = "My UI",
-    SubTitle          = "v1.0",
+    SubTitle          = "v3.0",
     Size              = UDim2.new(0, 550, 0, 400),
     ToggleKey         = Enum.KeyCode.RightControl,
     BbIcon            = "settings",
