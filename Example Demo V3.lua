@@ -16,7 +16,7 @@ local KeyResult = Library:KeySystem({
     KeysysSubText = "Enter your key below. Get one from our Discord.",
     KeysysMode    = "Manual",
     GetKey        = "https://discord.gg/4ymgWqkJe",
-    Key           = "KEYLAND_BYPASS",
+    Key           = ".*",
     Discord          = DISCORD_INVITE,
     DiscordTabShow   = "true",
 })
