@@ -1,53 +1,130 @@
 --[[
     VitaLib Enhanced v3.0 — Example.lua
-    Keyland key system integration
+    Keyland key system integration (uses executor request() function)
 --]]
 
+local DISCORD_INVITE = "discord.gg/4ymgWqkJe"
 local KEYLAND_URL    = "https://keyland.onrender.com"
-local DISCORD_INVITE = "discord.gg/ZKvgjBm4YE"
 
 local Library = loadstring(game:HttpGet'https://raw.githubusercontent.com/ITSMINECRAFTERTIME/VitaLib-XovaLib-Demo-V3-test/refs/heads/main/VitaLib.lua')()
 
 -- ══════════════════════════════════════════════════════════════════════════
--- KEY SYSTEM
+-- KEYLAND KEY SYSTEM
 -- ══════════════════════════════════════════════════════════════════════════
-local KeyResult = Library:KeySystem({
-    KeysysText    = "Keyland",
-    KeysysSubText = "Enter your key below. Get one from our Discord.",
-    KeysysMode    = "Manual",
-    GetKey        = "https://discord.gg/ZKvgjBm4YE",
-    Key           = ".*",
-    Discord          = DISCORD_INVITE,
-    DiscordTabShow   = "true",
-})
-
-if not KeyResult.Validated then return end
-
--- Validate against Keyland backend
 local HttpService = game:GetService("HttpService")
 local hwid = tostring(game:GetService("RbxAnalyticsService"):GetClientId())
-local enteredKey = KeyResult.Key or ""
+local verified = false
 
-local success, response = pcall(function()
-    return HttpService:PostAsync(
-        KEYLAND_URL .. "/api/keys/verify",
-        HttpService:JSONEncode({ key = enteredKey, hwid = hwid }),
-        Enum.HttpContentType.ApplicationJson
-    )
+local keyGui = Instance.new("ScreenGui")
+keyGui.Name = "KeylandGui"
+keyGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+keyGui.ResetOnSpawn = false
+keyGui.Parent = game:GetService("CoreGui")
+
+local frame = Instance.new("Frame", keyGui)
+frame.Size = UDim2.new(0, 320, 0, 140)
+frame.Position = UDim2.new(0.5, -160, 0.5, -70)
+frame.BackgroundColor3 = Color3.fromRGB(13, 13, 13)
+frame.BorderSizePixel = 0
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
+Instance.new("UIStroke", frame).Color = Color3.fromRGB(255, 0, 127)
+
+local title = Instance.new("TextLabel", frame)
+title.Text = "🔑 Keyland"
+title.TextColor3 = Color3.fromRGB(255, 0, 127)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 15
+title.Size = UDim2.new(1, 0, 0, 30)
+title.Position = UDim2.new(0, 0, 0, 8)
+title.BackgroundTransparency = 1
+
+local sub = Instance.new("TextLabel", frame)
+sub.Text = "Enter your key below"
+sub.TextColor3 = Color3.fromRGB(163, 163, 163)
+sub.Font = Enum.Font.Gotham
+sub.TextSize = 11
+sub.Size = UDim2.new(1, 0, 0, 16)
+sub.Position = UDim2.new(0, 0, 0, 34)
+sub.BackgroundTransparency = 1
+
+local input = Instance.new("TextBox", frame)
+input.Size = UDim2.new(0.88, 0, 0, 30)
+input.Position = UDim2.new(0.06, 0, 0, 56)
+input.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+input.TextColor3 = Color3.fromRGB(255, 255, 255)
+input.PlaceholderText = "KL-XXXXXXXXXXXXXXXX..."
+input.PlaceholderColor3 = Color3.fromRGB(80, 80, 80)
+input.Font = Enum.Font.Gotham
+input.TextSize = 12
+input.ClearTextOnFocus = false
+input.BorderSizePixel = 0
+Instance.new("UICorner", input).CornerRadius = UDim.new(0, 5)
+
+local status = Instance.new("TextLabel", frame)
+status.Text = ""
+status.TextColor3 = Color3.fromRGB(220, 50, 50)
+status.Font = Enum.Font.Gotham
+status.TextSize = 11
+status.Size = UDim2.new(1, 0, 0, 14)
+status.Position = UDim2.new(0, 0, 0, 90)
+status.BackgroundTransparency = 1
+
+local btn = Instance.new("TextButton", frame)
+btn.Size = UDim2.new(0.88, 0, 0, 26)
+btn.Position = UDim2.new(0.06, 0, 0, 106)
+btn.BackgroundColor3 = Color3.fromRGB(255, 0, 127)
+btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+btn.Text = "Submit"
+btn.Font = Enum.Font.GothamBold
+btn.TextSize = 13
+btn.BorderSizePixel = 0
+Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
+
+btn.MouseButton1Click:Connect(function()
+    local enteredKey = input.Text
+    if enteredKey == "" then
+        status.Text = "Please enter a key."
+        return
+    end
+    btn.Text = "Checking..."
+    btn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+    status.Text = ""
+
+    local ok, response = pcall(function()
+        return request({
+            Url = KEYLAND_URL .. "/api/keys/verify",
+            Method = "POST",
+            Headers = { ["Content-Type"] = "application/json" },
+            Body = HttpService:JSONEncode({ key = enteredKey, hwid = hwid })
+        })
+    end)
+
+    if not ok or not response then
+        status.Text = "Server unreachable."
+        btn.Text = "Submit"
+        btn.BackgroundColor3 = Color3.fromRGB(255, 0, 127)
+        return
+    end
+
+    local parsed, data = pcall(HttpService.JSONDecode, HttpService, response.Body)
+    if not parsed then
+        status.Text = "Bad response from server."
+        btn.Text = "Submit"
+        btn.BackgroundColor3 = Color3.fromRGB(255, 0, 127)
+        return
+    end
+
+    if data.valid then
+        verified = true
+        keyGui:Destroy()
+    else
+        status.Text = data.error or "Invalid key."
+        btn.Text = "Submit"
+        btn.BackgroundColor3 = Color3.fromRGB(255, 0, 127)
+    end
 end)
 
-if not success then
-    Library:Notification({ Title = "Keyland", Desc = "Could not reach key server.", Duration = 4, Type = "Error" })
-    return
-end
-
-local data = HttpService:JSONDecode(response)
-if not data.valid then
-    Library:Notification({ Title = "Keyland", Desc = data.error or "Invalid key.", Duration = 4, Type = "Error" })
-    return
-end
-
-Library:Notification({ Title = "Keyland", Desc = "Welcome! Key validated.", Duration = 3, Type = "Success" })
+repeat task.wait(0.1) until verified
 
 -- ══════════════════════════════════════════════════════════════════════════
 -- MAIN UI
@@ -152,7 +229,7 @@ local P2 = Window:NewPage({
 
 P2:Section("Sliders")
 
-local WalkSlider = P2:Slider({
+P2:Slider({
     Title    = "Walk Speed",
     Min      = 16,
     Max      = 300,
@@ -166,7 +243,7 @@ local WalkSlider = P2:Slider({
     end,
 })
 
-local JumpSlider = P2:Slider({
+P2:Slider({
     Title    = "Jump Power",
     Min      = 50,
     Max      = 500,
@@ -203,7 +280,7 @@ local P3 = Window:NewPage({
 
 P3:Section("Single Select")
 
-local ModeDropdown = P3:Dropdown({
+P3:Dropdown({
     Title    = "Game Mode",
     List     = { "Normal", "Hard", "Extreme", "Custom" },
     Value    = "Normal",
@@ -289,7 +366,7 @@ P5:Section("Paragraphs")
 
 P5:Paragraph({
     Title = "About VitaLib",
-    Desc  = "VitaLib Enhanced v3.0 — keysystem, toggles, sliders, dropdowns, keybinds, inputs, paragraphs, banners, real-time Discord card. All elements return metatables for programmatic updates.",
+    Desc  = "VitaLib Enhanced v3.0 — keysystem, toggles, sliders, dropdowns, keybinds, inputs, paragraphs, banners, real-time Discord card.",
     Icon  = "info",
 })
 
@@ -357,25 +434,17 @@ P7:Discord({
     Invite = DISCORD_INVITE,
 })
 
-P7:Section("Info")
-
 P7:RightLabel({
     Title = "Refresh Rate",
     Desc  = "How often data updates",
     Right = "60 seconds",
 })
 
-P7:Paragraph({
-    Title = "Auto-Refresh",
-    Desc  = "Calls game:HttpGet to discord.com/api/v9/invites directly. Re-fetches every 60 seconds. Falls back to N/A if unreachable.",
-    Icon  = "refresh-cw",
-})
-
 -- STARTUP
 task.delay(0.5, function()
     Library:Notification({
-        Title    = "Loaded",
-        Desc     = "VitaLib Enhanced v3.0 — Press RCtrl to toggle.",
+        Title    = "Keyland",
+        Desc     = "Loaded successfully. Press RCtrl to toggle.",
         Duration = 4,
         Type     = "Success",
     })
