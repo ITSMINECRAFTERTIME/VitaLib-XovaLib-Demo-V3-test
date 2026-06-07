@@ -10,7 +10,7 @@
 local DISCORD_INVITE = "discord.gg/4ymgWqkJe"
 -- ───────────────────────────────────────────────────────────────────────────
 
-local Library = loadstring(game:HttpGet'https://api.rubis.app/v2/scrap/MaIzTJtVSINMDUBI/raw')()
+local Library = loadstring(game:HttpGet'https://raw.githubusercontent.com/UnlessDahell/VitaLib-XovaLib-Demo-V3-/refs/heads/main/VitaLib.lua')()
 
 -- ══════════════════════════════════════════════════════════════════════════
 -- KEY SYSTEM — call before Window, yields until validated
