@@ -3,7 +3,7 @@
     Keyland key system integration (uses executor request() function)
 --]]
 
-local DISCORD_INVITE = "discord.gg/4ymgWqkJe"
+local DISCORD_INVITE = "discord.gg/ZKvgjBm4YE"
 local KEYLAND_URL    = "https://keyland.onrender.com"
 
 local Library = loadstring(game:HttpGet'https://raw.githubusercontent.com/ITSMINECRAFTERTIME/VitaLib-XovaLib-Demo-V3-test/refs/heads/main/VitaLib.lua')()
