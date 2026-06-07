@@ -4,7 +4,7 @@
 --]]
 
 local KEYLAND_URL    = "https://keyland.onrender.com"
-local DISCORD_INVITE = "discord.gg/4ymgWqkJe"
+local DISCORD_INVITE = "discord.gg/ZKvgjBm4YE"
 
 local Library = loadstring(game:HttpGet'https://raw.githubusercontent.com/ITSMINECRAFTERTIME/VitaLib-XovaLib-Demo-V3-test/refs/heads/main/VitaLib.lua')()
 
@@ -15,7 +15,7 @@ local KeyResult = Library:KeySystem({
     KeysysText    = "Keyland",
     KeysysSubText = "Enter your key below. Get one from our Discord.",
     KeysysMode    = "Manual",
-    GetKey        = "https://discord.gg/4ymgWqkJe",
+    GetKey        = "https://discord.gg/ZKvgjBm4YE",
     Key           = ".*",
     Discord          = DISCORD_INVITE,
     DiscordTabShow   = "true",
