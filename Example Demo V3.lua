@@ -1,117 +1,56 @@
 --[[
     VitaLib Enhanced v3.0 — Example.lua
-    
-    KeySystem must be called BEFORE Library:Window()
-    It yields until the user submits a valid key or the UI is destroyed.
-    If validation fails / UI closed → Validated = false → script stops.
+    Keyland key system integration
 --]]
 
--- ── CONFIGURATION ──────────────────────────────────────────────────────────
+local KEYLAND_URL    = "https://keyland.onrender.com"
 local DISCORD_INVITE = "discord.gg/4ymgWqkJe"
--- ───────────────────────────────────────────────────────────────────────────
 
-local Library = loadstring(game:HttpGet'https://raw.githubusercontent.com/ITSMINECRAFTERTIME/VitaLib-XovaLib-Demo-V3-/refs/heads/main/VitaLib.lua')()
+local Library = loadstring(game:HttpGet'https://raw.githubusercontent.com/ITSMINECRAFTERTIME/VitaLib-XovaLib-Demo-V3-test/refs/heads/main/VitaLib.lua')()
 
 -- ══════════════════════════════════════════════════════════════════════════
--- KEY SYSTEM — call before Window, yields until validated
+-- KEY SYSTEM
 -- ══════════════════════════════════════════════════════════════════════════
-
--- ── METHOD 1: Keyless ─────────────────────────────────────────────────────
--- No key needed. Shows a brief "No key required. Loading..." card for ~1.2s
--- then auto-closes and returns Validated = true. Key input row is hidden.
---[[
 local KeyResult = Library:KeySystem({
-    KeysysText    = "Vita Example",
-    KeysysSubText = "This script is free to use. Loading...",
-    KeysysMode    = "Keyless",
-
-    -- Discord tab still shown if you want (optional)
+    KeysysText    = "Keyland",
+    KeysysSubText = "Enter your key below. Get one from our Discord.",
+    KeysysMode    = "Manual",
+    GetKey        = "https://discord.gg/4ymgWqkJe",
+    Key           = "KEYLAND_BYPASS",
     Discord          = DISCORD_INVITE,
-    DiscordKeysysGet = "true",
-    DiscordPfp       = "https://example.com/server-icon.png",
-    DiscordBanner    = "https://example.com/server-banner.png",
     DiscordTabShow   = "true",
 })
 
 if not KeyResult.Validated then return end
---]]
 
--- ── METHOD 2: Manual (ACTIVE) ─────────────────────────────────────────────
-local KeyResult = Library:KeySystem({
-    KeysysText    = "Vita Example Keysystem",
-    KeysysSubText = "Enter your key to access the script. Get a key by clicking the button below.",
-    KeysysMode    = "Manual",
+-- Validate against Keyland backend
+local HttpService = game:GetService("HttpService")
+local hwid = tostring(game:GetService("RbxAnalyticsService"):GetClientId())
+local enteredKey = KeyResult.Key or ""
 
-    -- "Get Key" button copies this URL to clipboard
-    GetKey = "https://example.com/your-key-link",
+local success, response = pcall(function()
+    return HttpService:PostAsync(
+        KEYLAND_URL .. "/api/keys/verify",
+        HttpService:JSONEncode({ key = enteredKey, hwid = hwid }),
+        Enum.HttpContentType.ApplicationJson
+    )
+end)
 
-    -- Valid keys — comma separated, spaces around commas are trimmed automatically
-    Key = "HelloThisManual, Hey, Hi, Manual",
-
-    -- Discord tab
-    Discord          = DISCORD_INVITE,
-    DiscordKeysysGet = "true",
-    DiscordPfp       = "https://example.com/server-icon.png",
-    DiscordBanner    = "https://example.com/server-banner.png",
-    DiscordTabShow   = "true",
-})
-
-if not KeyResult.Validated then
+if not success then
+    Library:Notification({ Title = "Keyland", Desc = "Could not reach key server.", Duration = 4, Type = "Error" })
     return
 end
 
--- ── METHOD 3: Jnkie ────────────────────────────────────────────────────────
--- SDK is loaded ONCE on first "Get Link" click, reused for every Submit.
---
--- "Get Link" flow:
---   1. Loads jnkie.com/sdk/library.lua (once, cached)
---   2. Calls sdk.get_key_link()
---      → returns URL  → setclipboard + shows "✔ Copied!"
---      → returns nil  → cooldown active, shows "Wait 5 min"
---
--- "Submit Key" flow:
---   1. Reuses cached SDK (no re-load)
---   2. Increments attempt counter (max 5, matches official Jnkie example)
---   3. Calls sdk.check_key(entered)
---      → validation.valid = true  → sets getgenv().SCRIPT_KEY, loads JnkieScript
---      → validation.message errors handled:
---           KEY_EXPIRED      → "Key expired — get a new one"
---           HWID_BANNED      → shows error + kicks player after 1.5s
---           SERVICE_MISMATCH → "Key is for a different service"
---           HWID_MISMATCH    → "HWID limit reached"
---           anything else    → shows raw message
---   4. After 5 failed attempts → locked out
-
---[[
-local KeyResult = Library:KeySystem({
-    KeysysText    = "Premium Hub",
-    KeysysSubText = "Click 'Get Link', complete the steps, then paste your key below.",
-    KeysysMode    = "Jnkie",
-
-    -- Jnkie SDK config — matches: Junkie.service / .identifier / .provider
-    JnkieService    = "Premium Hub",
-    JnkieIdentifier = "12345",
-    JnkieProvider   = "Mixed",
-
-    -- Auto-loads this script after successful validation
-    -- Remove or leave empty if you load your script manually after KeySystem returns
-    JnkieScript = "https://api.jnkie.com/api/v1/luascripts/YOUR_SCRIPT_ID/download",
-
-    -- Discord tab shown on the keysystem screen
-    Discord          = DISCORD_INVITE,
-    DiscordKeysysGet = "true",                             -- show Copy Invite button
-    DiscordPfp       = "https://example.com/icon.png",    -- direct image URL
-    DiscordBanner    = "https://example.com/banner.png",  -- direct image URL
-    DiscordTabShow   = "true",                             -- "false" hides it
-})
-
-if not KeyResult.Validated then
-    return  -- HWID_BANNED, too many attempts, or user closed
+local data = HttpService:JSONDecode(response)
+if not data.valid then
+    Library:Notification({ Title = "Keyland", Desc = data.error or "Invalid key.", Duration = 4, Type = "Error" })
+    return
 end
---]]
+
+Library:Notification({ Title = "Keyland", Desc = "Welcome! Key validated.", Duration = 3, Type = "Success" })
 
 -- ══════════════════════════════════════════════════════════════════════════
--- MAIN UI — only reached after key is validated
+-- MAIN UI
 -- ══════════════════════════════════════════════════════════════════════════
 local Window = Library:Window({
     Title             = "VitaLib Demo",
@@ -140,9 +79,7 @@ local Window = Library:Window({
     },
 })
 
--- ─────────────────────────────────────────────────────────────────────────
 -- PAGE 1 — Main Controls
--- ─────────────────────────────────────────────────────────────────────────
 local P1 = Window:NewPage({
     Title    = "Main",
     Desc     = "Core controls",
@@ -205,9 +142,7 @@ P1:Button({
     end,
 })
 
--- ─────────────────────────────────────────────────────────────────────────
 -- PAGE 2 — Sliders & Input
--- ─────────────────────────────────────────────────────────────────────────
 local P2 = Window:NewPage({
     Title    = "Controls",
     Desc     = "Sliders & inputs",
@@ -258,9 +193,7 @@ P2:Input({
     end,
 })
 
--- ─────────────────────────────────────────────────────────────────────────
 -- PAGE 3 — Dropdowns
--- ─────────────────────────────────────────────────────────────────────────
 local P3 = Window:NewPage({
     Title    = "Dropdowns",
     Desc     = "Select options",
@@ -288,9 +221,7 @@ P3:Dropdown({
     end,
 })
 
--- ─────────────────────────────────────────────────────────────────────────
 -- PAGE 4 — Keybinds
--- ─────────────────────────────────────────────────────────────────────────
 local P4 = Window:NewPage({
     Title    = "Keybinds",
     Desc     = "Key bindings",
@@ -318,9 +249,7 @@ P4:Keybind({
     end,
 })
 
--- ─────────────────────────────────────────────────────────────────────────
 -- PAGE 5 — Info
--- ─────────────────────────────────────────────────────────────────────────
 local P5 = Window:NewPage({
     Title    = "Info",
     Desc     = "Labels & text",
@@ -364,9 +293,7 @@ P5:Paragraph({
     Icon  = "info",
 })
 
--- ─────────────────────────────────────────────────────────────────────────
 -- PAGE 6 — Theme
--- ─────────────────────────────────────────────────────────────────────────
 local P6 = Window:NewPage({
     Title    = "Theme",
     Desc     = "Visuals & theme",
@@ -416,9 +343,7 @@ P6:Toggle({
     end,
 })
 
--- ─────────────────────────────────────────────────────────────────────────
 -- PAGE 7 — Discord
--- ─────────────────────────────────────────────────────────────────────────
 local P7 = Window:NewPage({
     Title    = "Discord",
     Desc     = "Live server info",
@@ -446,9 +371,7 @@ P7:Paragraph({
     Icon  = "refresh-cw",
 })
 
--- ─────────────────────────────────────────────────────────────────────────
 -- STARTUP
--- ─────────────────────────────────────────────────────────────────────────
 task.delay(0.5, function()
     Library:Notification({
         Title    = "Loaded",
